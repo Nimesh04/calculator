@@ -3,13 +3,13 @@
 const numberBtn = document.querySelectorAll(".button.numbers");
 const operateBtn = document.querySelectorAll(".button.operator");
 const equalBtn = document.querySelector(".button.equal");
+const clearBtn = document.querySelector(".button.clear");
 const display = document.querySelector("#display");
 
-// display.textContent = 0;
+let waitingForSecondOperand = false;
+let anotherOperatorPressed = false;
+let previous, current, operator;
 
-const operationKeys =  ["C", "/", "*", "Del", "-", "+", "="];
-let operator = '';
-let prev, curr;
 
 // Calculator basic functionality
 
@@ -24,19 +24,17 @@ function subtract(a, b){
 
 function multiply(a, b){
     return a * b;
-}
+}   
 
 function divide(a, b){
     return (a / b).toFixed(2);
 }
 
+// Function performs the appropriate arithmetic according to the operator
 
 function operate(previous, current, operator){
     let displayValue;
     switch(operator){
-        case "C":
-            displayValue = 0;
-            break;
         case "/":
             displayValue = divide(previous, current);
             break;
@@ -50,56 +48,59 @@ function operate(previous, current, operator){
             break;
         case "+":
             displayValue = add(previous, current);
-
             break;
-        // case "=":
-        //     break;
     }
-    prev = displayValue;
-    curr = 0;
     display.textContent = displayValue;
+    return displayValue;
 }
 
-// function to figure out the pressed key
+// Function, if we know the operator was already pressed before hand then we empty the current display to make sure that we capture the second
+// operand that we need to compute, but we have to make sure that once the display is emptied we set that to false to make sure we capture all the
+// values for the current.
 
-function pressedKey(value){
-    let val = operationKeys.filter(item => item == value.textContent);
-    // console.log("Val: ", val);
-    // let equalValue = operationKeys.filter(() => value.textContent == "=");
-    // if(equalValue){
-    //     operate(parseFloat(prev), parseFloat(curr), operator);
-    // }
-    if(operator == ''){
-        number = display.textContent;
-        display.textContent = number + value.textContent;
-        prev = display.textContent;
-    }else{
-        number = display.textContent;
-        display.textContent = number + value.textContent;
-        curr = display.textContent;
+function assignValues(element){
+    if(anotherOperatorPressed){
+        display.textContent = '';
+        anotherOperatorPressed = false;
     }
-    console.log("Prev: ", prev, "Curr: ", curr, "operator: ", operator);
-    // display.textContent = display.textContent + value.textContent;
-    // console.log("dp value: ", display.textContent, "value value: ", value.textContent);
+    if(waitingForSecondOperand){
+        display.textContent = display.textContent + element.textContent;
+        current = display.textContent;
+    }else{
+        display.textContent = display.textContent + element.textContent;
+        previous = display.textContent;
+    }
 }
 
-// From the eventlistener it get's the element's text content and checks if that is in the preassigned array,
-// if it is then assigns that to the operator variable otherwise keeps it empty.
+// Function, if we know the operator isn't empty then we know there is a pair number already, so when operator isn't empty, we first
+// acknowledge that, then we compute the value of the previous operation which would be displayed and then only set the operator to the
+// current operator and the previous value to the computed value otherwise we just go with initializing the operator
 
 function assignOperator(element){
-    let checker = element.textContent;
-    let val = operationKeys.filter(item => item == checker);
-    if(val){
+    if(operator == undefined){
         operator = element.textContent;
         display.textContent = '';
+        waitingForSecondOperand = true;
     }else{
-        operator = '';
+        anotherOperatorPressed = true;
+        let value = operate(parseFloat(previous), parseFloat(current), operator);
+        previous = value;
+        console.log("previous: ", previous, "value: ", value);
+        operator = element.textContent;
+        display.textContent =value;
     }
     
 }
 
-numberBtn.forEach(element => element.addEventListener("click",() => pressedKey(element)));
-operateBtn.forEach(element => element.addEventListener("click",() => assignOperator(element)));
-equalBtn.addEventListener("click",() => operate(parseFloat(prev), parseFloat(curr), operator));
 
-
+numberBtn.forEach(element => element.addEventListener("click",() => assignValues(element)));
+operateBtn.forEach(element => element.addEventListener("click", () => assignOperator(element)));
+equalBtn.addEventListener("click", () => operate(parseFloat(previous), parseFloat(current), operator));
+clearBtn.addEventListener("click", () =>{
+    previous = 0;
+    current = 0;
+    operator = undefined;
+    anotherOperatorPressed = false;
+    waitingForSecondOperand =false;
+    display.textContent = '';
+})
